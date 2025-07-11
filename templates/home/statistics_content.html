@@ -1,0 +1,54 @@
+<div class="container">
+    <header class="header">
+        <h1>Dashboard Cảm biến</h1>
+        <p class="subtitle">Theo dõi và phân tích dữ liệu IoT theo thời gian</p>
+    </header>
+    
+    <section class="control-panel">
+        <div class="filter-section card">
+            <div class="filter-group">
+                <label for="sensorSelect">Loại cảm biến:</label>
+                <select id="sensorSelect" class="form-control">
+                    <option value="humidity">Độ ẩm</option>
+                    <option value="temperature">Nhiệt độ</option>
+                    <option value="light">Ánh sáng</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="timeRange">Khoảng thời gian:</label>
+                <select id="timeRange" class="form-control">
+                    <option value="day">Theo ngày</option>
+                    <option value="week">Theo tuần</option>
+                    <option value="month">Theo tháng</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="datePicker">Ngày:</label>
+                <input type="date" id="datePicker" class="form-control">
+            </div>
+            
+            <div class="button-group">
+                <button id="fetchData" class="btn btn-primary">
+                    <span class="btn-icon">📊</span>
+                    <span class="btn-text">Lấy dữ liệu</span>
+                </button>
+                <button id="generateRandom" class="btn btn-secondary">
+                    <span class="btn-icon">🎲</span>
+                    <span class="btn-text">Dữ liệu ngẫu nhiên</span>
+                </button>
+            </div>
+        </div>
+    </section>
+    
+    <section class="chart-section">
+        <div class="chart-container card">
+            <div class="chart-loading" id="chartLoading">
+                <div class="spinner"></div>
+                <p>Đang tải biểu đồ...</p>
+            </div>
+            <canvas id="sensorChart" width="600" height="300" style="display:block;"></canvas>
+        </div>
+    </section>
+</div>

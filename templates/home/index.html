@@ -1,0 +1,88 @@
+{% extends "layouts/base.html" %}
+{% block title %} IoT Dashboard {% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/control.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="pcoded-main-container">
+  <div class="pcoded-content">
+    <div class="container">
+
+      <!-- Hàng 1 -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">💧</div>
+            <div class="label">Độ ẩm</div>
+            <div class="value">75%</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">🌡️</div>
+            <div class="label">Nhiệt độ</div>
+            <div class="value">30°C</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">☀️</div>
+            <div class="label">Ánh sáng</div>
+            <div class="toggle">
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Hàng 2 -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">🌀</div>
+            <div class="label">Quạt</div>
+            <div class="toggle">
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">💡</div>
+            <div class="label">Bóng đèn</div>
+            <div class="toggle">
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="icon">🚰</div>
+            <div class="label">Máy bơm nước</div>
+            <div class="toggle">
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

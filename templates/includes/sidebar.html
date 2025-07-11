@@ -1,0 +1,23 @@
+<!-- [ navigation menu ] start -->
+<nav class="pcoded-navbar menupos-fixed menu-light">
+    <div class="navbar-wrapper">
+        <div class="navbar-content scroll-div">
+            <ul class="nav pcoded-inner-navbar">
+                <li class="nav-item pcoded-menu-caption">
+                    <label>Bảng Điều Khiển</label>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <a href="/" class="nav-link"><span class="pcoded-micon"><i class="feather icon-monitor"></i></span><span class="pcoded-mtext">Điều khiển và giám sát</span></a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'home_blueprint.automation' %}active{% endif %}">
+                    <a href="{{ url_for('home_blueprint.automation') }}" class="nav-link"><span class="pcoded-micon"><i class="feather icon-settings"></i></span><span class="pcoded-mtext">Tự động hóa</span></a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'home_blueprint.statistics' %}active{% endif %}">
+                    <a href="{{ url_for('home_blueprint.statistics') }}" class="nav-link"><span class="pcoded-micon"><i class="feather icon-bar-chart-2"></i></span><span class="pcoded-mtext">Thống kê</span></a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<!-- [ navigation menu ] end -->
+ 

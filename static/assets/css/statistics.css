@@ -1,0 +1,206 @@
+
+
+/* Reset và base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f7fa;
+    padding: 20px;
+}
+
+.container {
+    width: 95%;
+    max-width: 1200px;
+    margin: 0;
+    
+}
+
+/* Header styles */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    color: #2c3e50;
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #7f8c8d;
+    font-size: 1rem;
+}
+
+/* Card styles */
+.card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Filter section */
+.filter-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Form controls */
+.form-control {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #555;
+}
+
+/* Button styles */
+.button-group {
+    display: flex;
+    gap: 10px;
+    align-self: flex-end;
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-icon {
+    margin-right: 8px;
+}
+
+/* Chart container */
+.chart-container {
+    position: relative;
+    height: 500px;
+    width: 100%;
+}
+
+/* Loading spinner */
+.chart-loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+.chart-loading.active {
+    display: flex;
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #3498db;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Tooltip styles */
+.chartjs-tooltip {
+    opacity: 1 !important;
+    padding: 10px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    border-radius: 5px !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.chart-container canvas {
+    animation: fadeIn 1s ease-in-out;
+}
+
+/* Noscript warning */
+.noscript-warning {
+    background: #ff4757;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .filter-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .button-group {
+        grid-column: 1;
+        justify-content: stretch;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+canvas#sensorChart {
+  width: 100% !important;
+  height: 400px !important;
+}
