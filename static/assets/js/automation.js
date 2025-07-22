@@ -1,18 +1,17 @@
+// Thêm dòng mới vào bảng quy tắc
 function addCondition() {
   const table = document.getElementById("ruleTable").getElementsByTagName('tbody')[0];
   const newRow = table.insertRow();
 
   newRow.innerHTML = `
-    <td><input type="text" placeholder="ID"></td>
+    <td><input type="text" placeholder="Tên luật"></td>
     <td>
       <select>
-        
-<option value="Nhiệt độ">Nhiệt độ</option>
-<option value="Độ ẩm đất">Độ ẩm đất</option>
-<option value="Ánh sáng">Ánh sáng</option>
-<option value="CO2">CO2</option>
-<option value="pH">pH</option>
-
+        <option value="Nhiệt độ">Nhiệt độ</option>
+        <option value="Độ ẩm đất">Độ ẩm đất</option>
+        <option value="Ánh sáng">Ánh sáng</option>
+        <option value="CO2">CO2</option>
+        <option value="pH">pH</option>
       </select>
     </td>
     <td><input type="text" placeholder="Ngưỡng"></td>
@@ -23,34 +22,13 @@ function addCondition() {
   `;
 }
 
-
+// Xoá một dòng trong bảng
 function deleteRow(button) {
   const row = button.parentNode.parentNode;
   row.parentNode.removeChild(row);
 }
 
-function saveData() {
-  const rows = document.querySelectorAll("#ruleTable tbody tr");
-  const data = [];
-
-  rows.forEach(row => {
-    const inputs = row.querySelectorAll("input[type='text']");
-    const select = row.querySelector("select");
-    const switches = row.querySelectorAll("input[type='checkbox']");
-
-    data.push({
-      id: inputs[0].value,
-      cam_bien: select.value,
-      nguong: inputs[1].value,
-      hanh_dong: inputs[2].value,
-      trang_thai: switches[0].checked,
-      tu_dong: switches[1].checked
-    });
-  });
-
-  console.log("Dữ liệu lưu:", JSON.stringify(data, null, 2));
-  alert("Dữ liệu đã được lưu vào console!");
-}
+// Lưu dữ liệu từ bảng (hiện tại chỉ log ra console)
 function saveRules() {
   const rows = document.querySelectorAll("#ruleTable tbody tr");
   const rules = [];
@@ -58,15 +36,14 @@ function saveRules() {
   rows.forEach(row => {
     const inputs = row.querySelectorAll("input[type='text']");
     const select = row.querySelector("select");
-    const switches = row.querySelectorAll("input[type='checkbox']");
+    const checkbox = row.querySelector("input[type='checkbox']");
 
     rules.push({
-      id: inputs[0].value,
+      ten_luat: inputs[0].value,
       cam_bien: select.value,
       nguong: inputs[1].value,
       hanh_dong: inputs[2].value,
-      trang_thai: switches[0].checked,
-      tu_dong: switches[1].checked
+      trang_thai: checkbox.checked
     });
   });
 

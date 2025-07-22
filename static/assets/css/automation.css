@@ -173,4 +173,10 @@ input:checked + .slider:before {
   input:checked + .slider:before {
     transform: translateX(16px);
   }
+  /* Style riêng cho input Tên Luật (tùy chọn) */
+td:first-child input[type="text"] {
+  font-weight: bold;
+  background-color: #eef8ff;
+}
+
 }
