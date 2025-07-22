@@ -1,27 +1,43 @@
+/* Base Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: Arial, sans-serif;
   background: #f5f5f5;
-  padding: 0px;
+  padding: 0;
   margin: 0;
   text-align: center;
 }
 
 h1 {
-  font-size: 32px;
+  font-size: 2rem;
   margin-bottom: 30px;
 }
 
+.container {
+  padding: 0 10px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Table */
 table {
+  width: 100%;
   margin: 0 auto;
   border-collapse: collapse;
   background: white;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  font-size: 0.95rem;
 }
 
 th, td {
-  padding: 12px 20px;
+  padding: 10px;
   border-bottom: 1px solid #eee;
 }
 
@@ -30,13 +46,16 @@ th {
   font-weight: bold;
 }
 
-input[type="text"] {
-  width: 120px;
+/* Input */
+input[type="text"], select {
+  width: 100%;
   padding: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 14px;
 }
 
+/* Switch Toggle */
 .switch {
   position: relative;
   display: inline-block;
@@ -79,19 +98,30 @@ input:checked + .slider:before {
   transform: translateX(18px);
 }
 
-.add-btn {
-  margin-top: 30px;
+/* Buttons */
+.add-btn, .save-btn {
+  margin-top: 20px;
   padding: 12px 24px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
   font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  color: white;
   cursor: pointer;
+  display: inline-block;
 }
 
+.add-btn {
+  background-color: #007bff;
+}
 .add-btn:hover {
   background-color: #0069d9;
+}
+
+.save-btn {
+  background-color: #28a745;
+}
+.save-btn:hover {
+  background-color: #218838;
 }
 
 .delete-btn {
@@ -106,16 +136,41 @@ input:checked + .slider:before {
 .delete-btn:hover {
   background-color: #c0392b;
 }
-.save-btn {
-  margin-top: 30px;
-  padding: 12px 24px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.save-btn:hover {
-  background-color: #218838;
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 8px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .add-btn, .save-btn {
+    width: 90%;
+    font-size: 15px;
+  }
+
+  .container {
+    padding: 0 5px;
+  }
+
+  .switch {
+    width: 36px;
+    height: 20px;
+  }
+
+  .slider:before {
+    width: 16px;
+    height: 16px;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(16px);
+  }
 }
