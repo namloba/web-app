@@ -14,28 +14,23 @@
       <div class="row mb-4">
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">💧</div>
+            <div class="icon">💧</div>  <!-- Độ ẩm -->
             <div class="label">Độ ẩm</div>
-            <div class="value">75%</div>
+            <div class="value" id="doam-value">--</div>
           </div>
         </div>
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">🌡️</div>
+            <div class="icon">🌡️</div>  <!-- Nhiệt độ -->
             <div class="label">Nhiệt độ</div>
-            <div class="value">30°C</div>
+            <div class="value" id="nhietdo-value">--</div>
           </div>
         </div>
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">☀️</div>
+            <div class="icon">☀️</div>  <!-- Ánh sáng -->
             <div class="label">Ánh sáng</div>
-            <div class="toggle">
-              <label class="switch">
-                <input type="checkbox" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
+            <div class="value" id="anh-sang-value">--</div>
           </div>
         </div>
       </div>
@@ -46,11 +41,11 @@
       <div class="row">
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">🌀</div>
+            <div class="icon">🌀</div>  <!-- Quạt -->
             <div class="label">Quạt</div>
             <div class="toggle">
               <label class="switch">
-                <input type="checkbox" checked>
+                <input type="checkbox" onchange="toggleDevice(this, 'Relay1')">
                 <span class="slider"></span>
               </label>
             </div>
@@ -58,11 +53,11 @@
         </div>
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">💡</div>
+            <div class="icon">💡</div>  <!-- Bóng đèn -->
             <div class="label">Bóng đèn</div>
             <div class="toggle">
               <label class="switch">
-                <input type="checkbox" checked>
+                <input type="checkbox" onchange="toggleDevice(this, 'Relay2')">
                 <span class="slider"></span>
               </label>
             </div>
@@ -70,11 +65,11 @@
         </div>
         <div class="col-md-4">
           <div class="card text-center p-3">
-            <div class="icon">🚰</div>
+            <div class="icon">🚰</div>  <!-- Máy bơm nước -->
             <div class="label">Máy bơm nước</div>
             <div class="toggle">
               <label class="switch">
-                <input type="checkbox" checked>
+                <input type="checkbox" onchange="toggleDevice(this, 'Relay3')">
                 <span class="slider"></span>
               </label>
             </div>
@@ -85,4 +80,58 @@
     </div>
   </div>
 </div>
+
+<!-- JS: Cập nhật dữ liệu cảm biến -->
+<script>
+function fetchValue(resource, elementId, suffix = '') {
+  fetch(`/api/reading?device=Tu-1&resource=${resource}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.value !== undefined) {
+        document.getElementById(elementId).innerText = data.value + suffix;
+      } else {
+        document.getElementById(elementId).innerText = '--';
+      }
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      document.getElementById(elementId).innerText = '--';
+    });
+}
+
+function updateAllSensors() {
+  fetchValue('NhietDo', 'nhietdo-value', '°C');
+  fetchValue('DoAm', 'doam-value', '%');
+  fetchValue('AnhSang', 'anh-sang-value');
+}
+
+updateAllSensors();
+setInterval(updateAllSensors, 5000);
+</script>
+
+<!-- JS: Gửi lệnh điều khiển -->
+<script>
+function toggleDevice(checkbox, command) {
+  const state = checkbox.checked ? "true" : "false";
+
+  fetch(`/api/device/Tu-1/control/${command}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ state: state })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log(`Đã gửi lệnh ${command} = ${state}`);
+    } else {
+      console.error("Gửi lệnh thất bại:", data);
+    }
+  })
+  .catch(err => {
+    console.error("Lỗi kết nối đến server:", err);
+  });
+}
+</script>
 {% endblock %}
