@@ -17,7 +17,7 @@ function addCondition() {
     <td><input type="text" placeholder="Ngưỡng"></td>
     <td><input type="text" placeholder="Hành động"></td>
     <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+    
     <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
   `;
 }
