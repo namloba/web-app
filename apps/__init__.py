@@ -4,6 +4,7 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 import os
+import logging
 from flask import Flask
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -24,6 +25,9 @@ def register_blueprints(app):
 from apps.authentication.oauth import github_blueprint, google_blueprint
 
 def create_app(config):
+
+    # Thiết lập logging để hiển thị INFO ra terminal
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
     # Contextual
     static_prefix = '/static'

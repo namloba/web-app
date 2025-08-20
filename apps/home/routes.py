@@ -10,7 +10,8 @@ from jinja2 import TemplateNotFound
 from . import edgex_interface as edgex
 from flask import jsonify, request
 import datetime
-import random
+import logging
+
 
 
 @blueprint.route('/index')
@@ -18,6 +19,60 @@ import random
 def index():
 
     return render_template('home/index.html', segment='index')
+
+# API endpoint để lấy giá trị cảm biến và trạng thái relay mới nhất
+@blueprint.route('/api/reading')
+def get_reading():
+    device = request.args.get('device')
+    resource = request.args.get('resource')
+    
+    if not device or not resource:
+        return jsonify({"error": "Missing device or resource"}), 400
+        
+    try:
+        readings = edgex.get_readings(device, resource, limit=1)
+        logging.info(f"Sensor readings: {readings}")
+        if readings and len(readings) > 0:
+            return jsonify({"value": readings[0].get("value")})
+        return jsonify({"value": None})
+    except Exception as e:
+        logging.error(f"Error in get_reading: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# API endpoint để điều khiển thiết bị
+@blueprint.route('/api/device/<device>/control/<command>', methods=['POST'])
+def control_device(device, command):
+    try:
+        state = request.json.get('state')
+        if state not in ['true', 'false']:
+            return jsonify({"error": "Invalid state value"}), 400
+            
+        # Gửi lệnh điều khiển
+        result = edgex.send_command(
+            device_name=device,
+            command_name=command,
+            method="PUT",
+            body={command: state}
+        )
+
+        # Đọc lại trạng thái sau khi điều khiển để xác nhận
+        verify = edgex.send_command(
+            device_name=device,
+            command_name=command,
+            method="GET"
+        )
+        
+        # Kiểm tra xem trạng thái đã được cập nhật chưa
+        actual_state = str(verify.get(command, "false")).lower()
+        success = actual_state == state
+        
+        return jsonify({
+            "success": success,
+            "state": actual_state,
+            "result": result
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @blueprint.route('/automation')
@@ -73,37 +128,7 @@ def get_segment(request):
     
     
 
-# API Endpoints for EdgeX interactions
-# @blueprint.route('/api/nhietdo')
-# @login_required
-# def get_nhiet_do():
-#     readings = edgex.get_readings(device_name="Tu-1", resource_name="NhietDo", limit=1)
-#     if readings:
-#         return jsonify({"value": readings[0].get("value", "--")})
-#     return jsonify({"value": "--"})
-
-@blueprint.route('/api/reading')
-@login_required
-def get_single_reading():
-    # Giả lập dữ liệu cảm biến
-    resource = request.args.get("resource", "NhietDo")
-    fake_value = {
-        "NhietDo": round(random.uniform(25, 35), 1),   # 25.0 - 35.0 °C
-        "DoAm": round(random.uniform(50, 90), 1),      # 50 - 90 %
-        "AnhSang": random.randint(100, 1000)           # 100 - 1000 lux
-    }.get(resource, "--")
-    
-    return jsonify({"value": fake_value}) 
-
-@blueprint.route("/api/device/<device>/control/<command>", methods=["POST"])
-def control_device(device, command):
-    data = request.get_json()
-    state = data.get("state", "false")
-    try:
-        result = edgex.send_command(device, command, method="PUT", body={command: state})
-        return jsonify({"success": True, "response": result})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+# API Endpoints for EdgeX interactions - Real data
 
 
 @blueprint.route("/api/statistics/<sensor_type>")
@@ -119,15 +144,41 @@ def get_sensor_data(sensor_type):
     }
     resource = sensor_map.get(sensor_type, "NhietDo")
 
-    # Gọi EdgeX để lấy dữ liệu mới nhất
-    readings = edgex.get_readings(device_name="Tu-1", resource_name=resource, limit=24)
+    # Tính toán khoảng thời gian
+    dt = datetime.datetime.fromisoformat(selected_date)
+    if time_range == "day":
+        start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+        limit = 24
+    elif time_range == "week":
+        start = dt - datetime.timedelta(days=dt.weekday())
+        end = start + datetime.timedelta(days=6)
+        limit = 7
+    elif time_range == "month":
+        start = dt.replace(day=1)
+        next_month = (start + datetime.timedelta(days=32)).replace(day=1)
+        end = next_month - datetime.timedelta(seconds=1)
+        limit = 30
+    else:
+        start = dt
+        end = dt
+        limit = 24
+
+    start_ms = int(start.timestamp() * 1000)
+    end_ms = int(end.timestamp() * 1000)
+
+    readings = edgex.get_readings(device_name="Tu-1", resource_name=resource, start_ms=start_ms, end_ms=end_ms, limit=limit)
+    logging.info(f"Statistics readings for {resource}: {readings}")
 
     data = []
     for r in readings:
-        ts = r.get("origin") or r.get("created")  # milliseconds
+        ts = r.get("origin") or r.get("created")
         try:
             dt = datetime.datetime.fromtimestamp(int(ts)/1000)
-            label = dt.strftime("%H:%M") if time_range == "day" else dt.strftime("%d/%m")
+            if time_range == "day":
+                label = dt.strftime("%H:%M")
+            else:
+                label = dt.strftime("%d/%m")
         except:
             label = "unknown"
         data.append({
@@ -135,5 +186,5 @@ def get_sensor_data(sensor_type):
             "value": float(r.get("value", 0))
         })
 
-    data = data[::-1]  # đảo ngược thời gian mới nhất về sau cùng
+    data = data[::-1]
     return jsonify(data)

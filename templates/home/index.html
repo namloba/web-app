@@ -81,7 +81,7 @@
   </div>
 </div>
 
-<!-- JS: Cập nhật dữ liệu cảm biến -->
+<!-- JS: Cập nhật dữ liệu cảm biến và trạng thái thiết bị -->
 <script>
 function fetchValue(resource, elementId, suffix = '') {
   fetch(`/api/reading?device=Tu-1&resource=${resource}`)
@@ -99,14 +99,48 @@ function fetchValue(resource, elementId, suffix = '') {
     });
 }
 
-function updateAllSensors() {
+// Hàm lấy trạng thái của relay
+function fetchRelayState(relayNumber) {
+  fetch(`/api/reading?device=Tu-1&resource=Relay${relayNumber}`)
+    .then(res => res.json())
+    .then(data => {
+      // Giả sử data nhận về dạng { value: "true" } hoặc { value: "false" }
+      const checkbox = document.querySelector(`input[onchange="toggleDevice(this, 'Relay${relayNumber}')"]`);
+      if (checkbox) {
+        checkbox.onchange = null;
+        const relayStr = String(data.value).trim().toLowerCase();
+        if (relayStr === "true") {
+          checkbox.checked = true;
+        } else if (relayStr === "false") {
+          checkbox.checked = false;
+        } else {
+          // Nếu giá trị không hợp lệ thì không update trạng thái checkbox
+          console.warn(`relayValue không hợp lệ:`, data.value);
+          checkbox.onchange = function() { toggleDevice(this, `Relay${relayNumber}`); };
+          return;
+        }
+        checkbox.onchange = function() { toggleDevice(this, `Relay${relayNumber}`); };
+      }
+    })
+    .catch(err => {
+      console.error(`Error fetching Relay${relayNumber} state:`, err);
+    });
+}
+
+function updateAllStates() {
+  // Cập nhật giá trị cảm biến
   fetchValue('NhietDo', 'nhietdo-value', '°C');
   fetchValue('DoAm', 'doam-value', '%');
   fetchValue('AnhSang', 'anh-sang-value');
+  
+  // Cập nhật trạng thái các relay
+  fetchRelayState(1);
+  fetchRelayState(2);
+  fetchRelayState(3);
 }
 
-updateAllSensors();
-setInterval(updateAllSensors, 5000);
+updateAllStates();
+setInterval(updateAllStates, 5000);
 </script>
 
 <!-- JS: Gửi lệnh điều khiển -->

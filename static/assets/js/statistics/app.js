@@ -53,13 +53,12 @@
 
 import { initChart, updateChart } from './chartManager.js';
 import { fetchSensorData } from './apiService.js';
-import { generateRandomData } from './dataGenerator.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     const sensorSelect = document.getElementById('sensorSelect');
     const timeRangeSelect = document.getElementById('timeRange');
     const datePicker = document.getElementById('datePicker');
-    const generateRandomBtn = document.getElementById('generateRandom');
+    const fetchButton = document.getElementById('fetchData'); // Chỉ dùng nút này
 
     // Đặt ngày mặc định là hôm nay
     const today = new Date().toISOString().split('T')[0];
@@ -68,8 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Khởi tạo biểu đồ với dữ liệu rỗng
     initChart([], [], 'humidity');
 
-    // ✅ Gắn sự kiện cho nút DỮ LIỆU NGẪU NHIÊN
-    generateRandomBtn.addEventListener('click', function () {
+    // Sự kiện lấy dữ liệu thật từ EdgeX
+    fetchButton.addEventListener('click', async function() {
         const sensorType = sensorSelect.value;
         const timeRange = timeRangeSelect.value;
         const selectedDate = datePicker.value;
@@ -79,12 +78,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const randomData = generateRandomData(sensorType, timeRange, selectedDate);
-        updateChart(randomData.labels, randomData.values, sensorType, randomData.unit);
+        const data = await fetchSensorData(sensorType, timeRange, selectedDate);
+        updateChart(data.labels, data.values, sensorType, data.unit);
     });
 
-    // ✅ KHÔNG gọi fetchSensorData vì bạn đã bỏ nút lấy dữ liệu thật
-    // Bạn có thể hiển thị dữ liệu ngẫu nhiên mặc định lúc vào trang nếu muốn:
-    const initialData = generateRandomData('humidity', 'day', today);
-    updateChart(initialData.labels, initialData.values, 'humidity', initialData.unit);
+    // Lấy dữ liệu thật mặc định khi vào trang
+    fetchSensorData('humidity', 'day', today)
+        .then(data => updateChart(data.labels, data.values, 'humidity', data.unit));
 });

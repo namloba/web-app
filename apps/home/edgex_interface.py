@@ -1,11 +1,16 @@
+from dotenv import load_dotenv
+import os
 import requests
 import time
 
+# Load environment variables from .env file
+load_dotenv()
+
 # ==== Base URLs ====
-CORE_METADATA_URL = "http://192.168.164.218:59881"
-CORE_COMMAND_URL  = "http://192.168.164.218:59882"
-CORE_DATA_URL     = "http://192.168.164.218:59880"
-RULE_ENGINE_URL   = "http://192.168.164.218:59720"
+CORE_METADATA_URL = os.getenv("CORE_METADATA_URL")
+CORE_COMMAND_URL  = os.getenv("CORE_COMMAND_URL")
+CORE_DATA_URL     = os.getenv("CORE_DATA_URL")
+RULE_ENGINE_URL   = os.getenv("RULE_ENGINE_URL")
 
 
 # ==== DEVICE & COMMAND ====
@@ -23,6 +28,7 @@ def get_all_devices():
 def get_device_by_name(name):
     try:
         url = f"{CORE_METADATA_URL}/api/v3/device/name/{name}"
+        print(f"Fetching device: {url}")
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
@@ -36,6 +42,7 @@ def send_command(device_name, command_name, method="PUT", body=None):
     """
     try:
         url = f"{CORE_COMMAND_URL}/api/v3/device/name/{device_name}/{command_name}"
+        print(f"Fetching device: {url}")
         if method.upper() == "PUT":
             response = requests.put(url, json=body or {})
         else:
@@ -58,6 +65,9 @@ def get_readings(device_name, resource_name, start_ms=None, end_ms=None, limit=1
         params = {"limit": limit}
         if start_ms: params["start"] = start_ms
         if end_ms: params["end"] = end_ms
+
+        print(f"Fetching device: {url}")
+
         response = requests.get(url, params=params)
         response.raise_for_status()
         return response.json().get("readings", [])
@@ -227,6 +237,57 @@ def create_out_of_range_rule(
     sql = f"""
         SELECT {resource_name} FROM {stream_name}
         WHERE {resource_name} < {lower} OR {resource_name} > {upper}
+    """
+
+    actions = [
+        {
+            "rest": {
+                "bodyType": "json",
+                "dataTemplate": f'{{"{relay_command}":"{relay_state}"}}',
+                "method": "PUT",
+                "url": f"http://edgex-core-command:59882/api/v3/device/name/{device_name}/{relay_command}"
+            }
+        },
+        {
+            "mqtt": {
+                "server": "tcp://broker.emqx.io:1883",
+                "topic": mqtt_topic,
+                "dataTemplate": f"\"rule:{rule_id} da kich hoat\""
+            }
+        }
+    ]
+
+    return create_rule(rule_id=rule_id, sql_query=sql.strip(), actions=actions)
+
+
+
+def create_bellow_threshold_rule(
+    rule_id: str,
+    stream_name: str,
+    device_name: str,
+    resource_name: str,
+    lower: float,
+    relay_command: str,
+    relay_state: str,
+    mqtt_topic: str = "hou/edge-gatewa/noti"
+):
+    """
+    Tạo rule khi resource nằm ngoài khoảng [lower, upper],
+    dùng để cảnh báo hoặc bật relay khi điều kiện bất thường xảy ra.
+
+    - rule_id: tên rule
+    - stream_name: tên stream đã tạo
+    - device_name: tên thiết bị
+    - resource_name: tên cảm biến (VD: NhietDo)
+    - lower / upper: ngưỡng cho phép
+    - relay_command: tên command điều khiển (VD: Relay1)
+    - relay_state: trạng thái cần set (VD: "true")
+    - mqtt_topic: topic thông báo (mặc định: hou/edge-gatewa/noti)
+    """
+
+    sql = f"""
+        SELECT {resource_name} FROM {stream_name}
+        WHERE {resource_name} < {lower}
     """
 
     actions = [

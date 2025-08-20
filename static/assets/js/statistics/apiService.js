@@ -1,6 +1,4 @@
-import { generateRandomData } from './dataGenerator.js';
-
-// Hàm giả lập API cho nhiều loại cảm biến
+// Hàm lấy dữ liệu thật từ Flask/edgex
 export async function fetchSensorData(sensorType, timeRange, selectedDate) {
     try {
         const res = await fetch(`/api/statistics/${sensorType}?timeRange=${timeRange}&date=${selectedDate}`);
