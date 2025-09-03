@@ -133,6 +133,10 @@ function updateAllStates() {
   fetchValue('DoAm', 'doam-value', '%');
   fetchValue('AnhSang', 'anh-sang-value');
   
+  document.querySelectorAll("input([type='checkbox'])").forEach(checkbox => {
+    checkbox.checked = false; // Reset trạng thái checkbox trước khi cập nhật
+  });
+  
   // Cập nhật trạng thái các relay
   fetchRelayState(1);
   fetchRelayState(2);

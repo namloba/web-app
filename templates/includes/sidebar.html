@@ -15,9 +15,16 @@
                 <li class="nav-item {% if request.endpoint == 'home_blueprint.statistics' %}active{% endif %}">
                     <a href="{{ url_for('home_blueprint.statistics') }}" class="nav-link"><span class="pcoded-micon"><i class="feather icon-bar-chart-2"></i></span><span class="pcoded-mtext">Thống kê</span></a>
                 </li>
+                <li class="nav-item {% if request.endpoint == 'home_blueprint.schedule' %}active{% endif %}">
+                    <a href="{{ url_for('home_blueprint.schedule') }}" class="nav-link">
+                        <span class="pcoded-micon"><i class="feather icon-calendar"></i></span>
+                        <span class="pcoded-mtext">Đặt lịch</span>
+                    </a>
+                </li>
+
+                
             </ul>
         </div>
     </div>
 </nav>
 <!-- [ navigation menu ] end -->
- 

@@ -86,7 +86,10 @@ def statistics():
     
     return render_template('home/statistics.html', segment='statistics')
 
-
+@blueprint.route('shedule', methods=['GET', 'POST'])
+@login_required
+def schedule():
+    return render_template('home/schedule.html', segment='schedule')
 
 
 @blueprint.route('/<template>')
