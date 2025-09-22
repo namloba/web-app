@@ -3,11 +3,12 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-from flask import render_template, redirect, request, url_for
+from flask import session, render_template, redirect, url_for, flash, request
 from flask_login import (
     current_user,
     login_user,
-    logout_user
+    logout_user,
+    login_required
 )
 
 from flask_dance.contrib.github import github
@@ -16,7 +17,7 @@ from flask_dance.contrib.google import google
 from apps import db, login_manager
 from apps.authentication import blueprint
 from apps.authentication.forms import LoginForm, CreateAccountForm
-from apps.authentication.models import Users
+from apps.authentication.models import Users, Farms
 from apps.config import Config
 from apps.authentication.util import verify_pass
 
@@ -63,7 +64,7 @@ def login():
         if user and verify_pass(password, user.password):
 
             login_user(user)
-            return redirect(url_for('authentication_blueprint.route_default'))
+            return redirect(url_for('authentication_blueprint.farm_management'))
 
         # Something (user or pass) is not ok
         return render_template('accounts/login.html',
@@ -152,3 +153,63 @@ def has_github():
 @blueprint.context_processor
 def has_google():
     return {'has_google': bool(Config.GOOGLE_ID) and bool(Config.GOOGLE_SECRET)}
+
+@blueprint.route('/farm-management', methods=['GET', 'POST'])
+@login_required
+def farm_management():
+    if request.method == 'POST':
+        # Thêm farm mới
+        name = request.form.get('name')
+        description = request.form.get('description')
+        if name:
+            try:
+                current_user.add_farm(name, description)
+                flash('Thêm farm thành công!', 'success')
+            except Exception as e:
+                flash(f'Lỗi: {str(e)}', 'danger')
+        return redirect(url_for('authentication_blueprint.farm_management'))
+
+    # Hiển thị danh sách farm
+    farms = Farms.query.filter_by(user_id=current_user.id).all()
+    return render_template('farm_management.html', farms=farms)
+
+@blueprint.route('/farm-management/delete/<int:farm_id>', methods=['POST'])
+@login_required
+def delete_farm(farm_id):
+    if current_user.delete_farm(farm_id):
+        flash('Xóa farm thành công!', 'success')
+    else:
+        flash('Không tìm thấy farm hoặc không thể xóa!', 'danger')
+    return redirect(url_for('authentication_blueprint.farm_management'))
+
+@blueprint.route('/update_farm/<int:farm_id>', methods=['POST'])
+@login_required
+def update_farm(farm_id):
+    name = request.form.get('name')
+    description = request.form.get('description')
+    farm = current_user.update_farm(farm_id, name, description)
+    if farm:
+        flash('Cập nhật farm thành công!', 'success')
+    else:
+        flash('Không tìm thấy farm hoặc không thể cập nhật!', 'danger')
+    return redirect(url_for('authentication_blueprint.farm_management'))
+
+@blueprint.route('/select-farm/<int:farm_id>', methods=['POST'])
+@login_required
+def select_farm(farm_id):
+    farm = Farms.query.filter_by(id=farm_id, user_id=current_user.id).first()
+    if farm:
+        session['selected_farm_id'] = farm.id
+        return redirect(url_for('authentication_blueprint.dashboard'))
+    flash('Farm không tồn tại hoặc không thuộc về bạn!', 'danger')
+    return redirect(url_for('authentication_blueprint.farm_management'))
+
+@blueprint.route('/dashboard')
+@login_required
+def dashboard():
+    farm_id = session.get('selected_farm_id')
+    if not farm_id:
+        return redirect(url_for('authentication_blueprint.farm_management'))
+    farm = Farms.query.filter_by(id=farm_id).first()
+    farm_name = farm.name if farm else "Chưa chọn farm"
+    return render_template('home/index.html', farm_name=farm_name)

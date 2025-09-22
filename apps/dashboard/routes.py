@@ -4,7 +4,7 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 from flask_login import UserMixin
-
+from flask import session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
 
@@ -138,3 +138,18 @@ class Farms(db.Model):
 
     def __repr__(self):
         return f"<Farm {self.name} (User {self.user_id})>"
+
+from flask import session
+from apps.authentication.models import Farms
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    farm_id = session.get('selected_farm_id')
+    if not farm_id:
+        return redirect(url_for('farm_management'))
+    farm = Farms.query.filter_by(id=farm_id).first()
+    farm_name = farm.name if farm else "Chưa chọn farm"
+    # ...existing code...
+    # Thay "Tu-1" bằng farm_name trong render_template hoặc logic
+    return render_template('dashboard.html', farm_name=farm_name)

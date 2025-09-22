@@ -6,6 +6,10 @@
 {% endblock %}
 
 {% block content %}
+<script>
+window.farmName = "{{ farm_name }}";
+localStorage.setItem('farmName', window.farmName);
+</script>
 <div class="pcoded-main-container">
   <div class="pcoded-content">
     <div class="container">
@@ -84,7 +88,7 @@
 <!-- JS: Cập nhật dữ liệu cảm biến và trạng thái thiết bị -->
 <script>
 function fetchValue(resource, elementId, suffix = '') {
-  fetch(`/api/reading?device=Tu-1&resource=${resource}`)
+  fetch(`/api/${farmName}/reading?resource=${resource}`)
     .then(res => res.json())
     .then(data => {
       if (data && data.value !== undefined) {
@@ -101,9 +105,10 @@ function fetchValue(resource, elementId, suffix = '') {
 
 // Hàm lấy trạng thái của relay
 function fetchRelayState(relayNumber) {
-  fetch(`/api/reading?device=Tu-1&resource=Relay${relayNumber}`)
+  fetch(`/api/${farmName}/reading?resource=Relay${relayNumber}`)
     .then(res => res.json())
     .then(data => {
+      console.log(`Relay${relayNumber} state:`, data);
       // Giả sử data nhận về dạng { value: "true" } hoặc { value: "false" }
       const checkbox = document.querySelector(`input[onchange="toggleDevice(this, 'Relay${relayNumber}')"]`);
       if (checkbox) {
@@ -132,8 +137,8 @@ function updateAllStates() {
   fetchValue('NhietDo', 'nhietdo-value', '°C');
   fetchValue('DoAm', 'doam-value', '%');
   fetchValue('AnhSang', 'anh-sang-value');
-  
-  document.querySelectorAll("input([type='checkbox'])").forEach(checkbox => {
+
+  document.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
     checkbox.checked = false; // Reset trạng thái checkbox trước khi cập nhật
   });
   
@@ -152,7 +157,7 @@ setInterval(updateAllStates, 5000);
 function toggleDevice(checkbox, command) {
   const state = checkbox.checked ? "true" : "false";
 
-  fetch(`/api/device/Tu-1/control/${command}`, {
+  fetch(`/api/${farmName}/device/control/${command}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

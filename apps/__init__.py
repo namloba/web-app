@@ -23,6 +23,7 @@ def register_blueprints(app):
         app.register_blueprint(module.blueprint)
 
 from apps.authentication.oauth import github_blueprint, google_blueprint
+from apps.authentication.models import Users, Farms, OAuth
 
 def create_app(config):
 
@@ -46,4 +47,8 @@ def create_app(config):
     register_blueprints(app)
     app.register_blueprint(github_blueprint, url_prefix="/login")    
     app.register_blueprint(google_blueprint, url_prefix="/login")    
+
+    with app.app_context():
+        db.create_all()
+
     return app

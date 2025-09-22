@@ -1,7 +1,9 @@
+const farmName = localStorage.getItem('farmName'); // Lấy farmName từ localStorage
+
 // Hàm lấy dữ liệu thật từ Flask/edgex
 export async function fetchSensorData(sensorType, timeRange, selectedDate) {
     try {
-        const res = await fetch(`/api/statistics/${sensorType}?timeRange=${timeRange}&date=${selectedDate}`);
+        const res = await fetch(`/api/${farmName}/statistics/${sensorType}?timeRange=${timeRange}&date=${selectedDate}`);
         const data = await res.json();
 
         return {

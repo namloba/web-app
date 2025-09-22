@@ -1,3 +1,5 @@
+const farmName = localStorage.getItem('farmName'); // Đặt lên đầu file
+
 // state
 let rules = [];
 
@@ -58,11 +60,14 @@ function renderRules() {
             <td style="text-align:right"><button class="btn-danger" data-del="${i}">Xóa</button></td>`;
         tbody.appendChild(tr);
     });
-    qAll('button[data-del]').forEach(btn => btn.onclick = () => {
+    qAll('button[data-del]').forEach(btn => btn.onclick = async () => {
         const idx = parseInt(btn.dataset.del);
         if (confirm('Xóa luật # ' + (idx + 1) + '?')) {
-            rules.splice(idx, 1);
-            renderRules();
+            const ruleId = rules[idx].id;
+            if (await deleteRule(ruleId)) { // Gọi API xóa rule trên server
+                rules.splice(idx, 1);
+                renderRules();
+            }
         }
     });
 }
@@ -115,54 +120,167 @@ function readRuleFromModal() {
     const newId = findAvailableId();
     if (newId === null) { alert("Tối đa 32 rule."); return null; }
     const rows = qAll('#modal .modal-box tbody tr');
+    const startDateValue = q('#dateStart').value;
     const rule = {
         repeat_days: parseInt(q('#repeatDays').value || '1', 10),
         start_in_minutes: timeToMinutes(q('#timeStart').value),
         end_in_minutes: timeToMinutes(q('#timeEnd').value),
-        start_date: q('#dateStart').value || null,
+        start_date: startDateValue ? startDateValue : "", // sửa: luôn là string
         relay_index: MAPPINGS.RELAY_INDEX[q('#actionDevice').value],
         relay_value: MAPPINGS.RELAY_VALUE[q('#actionStatus').value],
         reverse_on_false: !!q('#reverseOnFalse').checked,
         logic: ((rows[1].querySelector('.logic-select').value === 'AND') << 1) | ((rows[2].querySelector('.logic-select').value === 'AND') << 2),
-        temp_min: rows[0].querySelector('.val-min').value || MAPPINGS.SENSOR.temperature.min,
-        temp_max: rows[0].querySelector('.val-max').value || MAPPINGS.SENSOR.temperature.max,
-        hum_min: rows[1].querySelector('.val-min').value || MAPPINGS.SENSOR.humidity.min,
-        hum_max: rows[1].querySelector('.val-max').value || MAPPINGS.SENSOR.humidity.max,
-        light_min: rows[2].querySelector('.val-min').value || MAPPINGS.SENSOR.light.min,
-        light_max: rows[2].querySelector('.val-max').value || MAPPINGS.SENSOR.light.max,
+        temp_min: parseInt(rows[0].querySelector('.val-min').value || MAPPINGS.SENSOR.temperature.min, 10),
+        temp_max: parseInt(rows[0].querySelector('.val-max').value || MAPPINGS.SENSOR.temperature.max, 10),
+        hum_min: parseInt(rows[1].querySelector('.val-min').value || MAPPINGS.SENSOR.humidity.min, 10),
+        hum_max: parseInt(rows[1].querySelector('.val-max').value || MAPPINGS.SENSOR.humidity.max, 10),
+        light_min: parseInt(rows[2].querySelector('.val-min').value || MAPPINGS.SENSOR.light.min, 10),
+        light_max: parseInt(rows[2].querySelector('.val-max').value || MAPPINGS.SENSOR.light.max, 10),
         id: newId
     };
     return rule;
 }
 
-// Gửi rule đến API Flask để lưu vào database
-function saveRuleToDatabase(rule) {
-    fetch('/api/rules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rule)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error('Error saving rule:', data.error);
+// Hàm lưu dữ liệu, đã được sửa để trả về promise như đã giải thích
+async function saveRuleToDatabase(rule) {
+    try {
+        const response = await fetch(`/api/${farmName}/rule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rule)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            if (data.error) {
+                console.error('Lỗi từ server:', data.error);
+                alert('Lỗi khi lưu rule: ' + data.error);
+                return false;
+            } else {
+                console.log('Rule đã được lưu thành công:', data);
+                alert('Rule đã được lưu vào database!');
+                return true;
+            }
         } else {
-            console.log('Rule saved successfully:', data);
-            alert('Rule đã được lưu vào database!');
+            console.error('Lỗi HTTP:', response.status, response.statusText);
+            alert('Lỗi khi kết nối hoặc xử lý yêu cầu.');
+            return false;
         }
-    })
-    .catch(error => console.error('Error:', error));
+    } catch (error) {
+        console.error('Lỗi mạng hoặc xử lý:', error);
+        alert('Lỗi kết nối tới server: ' + error.message);
+        return false;
+    }
 }
 
-// Cập nhật hàm saveRule để lưu vào database
-function saveRule() {
+async function saveRule() {
     const r = readRuleFromModal();
     if (!r) return;
+    
     console.log('Rule JSON:', JSON.stringify(r, null, 2));
-    rules.push(r);
-    renderRules();
-    closeModal();
-    saveRuleToDatabase(r); // Gửi rule đến API để lưu vào database
+    const setRuleStr = ruleToSetRuleString(r);
+    console.log('SetRule:', setRuleStr);
+
+    // Vô hiệu hóa nút lưu để tránh nhấn liên tục
+    const saveButton = document.querySelector('#your-save-button-id'); // Thay bằng ID nút của bạn
+    if (saveButton) {
+        saveButton.disabled = true;
+    }
+    
+    // Sử dụng await để chờ kết quả từ saveRuleToDatabase
+    const success = await saveRuleToDatabase(r); // Chờ cho đến khi hàm này hoàn thành
+    
+    // Kích hoạt lại nút
+    if (saveButton) {
+        saveButton.disabled = false;
+    }
+
+    if (success) {
+        console.log('Rule đã được lưu vào database, thêm vào danh sách tạm thời.');
+        rules.push(r);
+        renderRules();
+        closeModal();
+    } else {
+        console.log('Rule không được lưu vào database, không thêm vào danh sách tạm thời.');
+    }
+}
+
+async function fetchRulesFromServer() {
+    try {
+        const response = await fetch(`/api/${farmName}/rules/all`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }  
+        const data = await response.json();
+        if (data.error) {
+            console.error('Lỗi từ server:', data.error);
+            alert('Lỗi khi lấy rules: ' + data.error);
+            return [];
+        }   
+        return data.rules || [];
+    } catch (error) {
+        console.error('Lỗi mạng hoặc xử lý:', error);
+        alert('Lỗi kết nối tới server: ' + error.message);
+        return [];
+    } 
+}
+
+// Khởi tạo: lấy rules từ server và render
+(async () => {
+    const fetchedRules = await fetchRulesFromServer();
+    if (fetchedRules.length > 0) {
+        rules = fetchedRules;
+        renderRules();
+    }
+})();
+
+async function deleteRule(ruleId) {
+    try {
+        const response = await fetch(`/api/${farmName}/rule?id=${ruleId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.error) {
+            console.error('Lỗi từ server:', data.error);
+            alert('Lỗi khi xóa rule: ' + data.error);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('Lỗi mạng hoặc xử lý:', error);
+        alert('Lỗi kết nối tới server: ' + error.message);
+        return false;
+    }
+}
+
+// Convert rule object to SetRule string format
+function ruleToSetRuleString(rule) {
+    // Compose the array in the order: id, relay_index, relay_value, start_in_minutes, repeat_days, logic, temp_min, temp_max, hum_min, hum_max, light_min, light_max
+    // relay_value: ON=true->1, OFF=false->0
+    // reverse_on_false: add as last field (1/0)
+    // start_date: convert to days since referenceDate
+    const arr = [
+        rule.id,
+        rule.relay_index,
+        rule.relay_value ? 1 : 0,
+        rule.start_in_minutes,
+        rule.repeat_days,
+        rule.logic,
+        Number(rule.temp_min),
+        Number(rule.temp_max),
+        Number(rule.hum_min),
+        Number(rule.hum_max),
+        Number(rule.light_min),
+        Number(rule.light_max),
+        dateToDays(rule.start_date) ?? 0,
+        rule.end_in_minutes,
+        rule.reverse_on_false ? 1 : 0
+    ];
+    return arr.join(',');
 }
 
 function loadRulesFromJson(jsonRules) {
@@ -175,6 +293,6 @@ function loadRulesFromJson(jsonRules) {
 q('#btnAdd').onclick = openModal;
 q('#btnClose').onclick = closeModal;
 q('#btnCancel').onclick = closeModal;
-q('#btnSave').onclick = saveRule;
+q('#btnSave').onclick = saveRule; // Đảm bảo nút "Lưu" gọi đúng hàm saveRule
 
 renderRules();

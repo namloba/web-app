@@ -12,6 +12,9 @@ from flask import jsonify, request
 import datetime
 import logging
 
+from .edgex_interface import Rule
+
+
 
 
 @blueprint.route('/index')
@@ -21,17 +24,14 @@ def index():
     return render_template('home/index.html', segment='index')
 
 # API endpoint để lấy giá trị cảm biến và trạng thái relay mới nhất
-@blueprint.route('/api/reading')
-def get_reading():
-    device = request.args.get('device')
+@blueprint.route('/api/<farm_name>/reading')
+def get_reading(farm_name):
     resource = request.args.get('resource')
-    
-    if not device or not resource:
-        return jsonify({"error": "Missing device or resource"}), 400
-        
+    if not farm_name or not resource:
+        return jsonify({"error": "Missing farm_name or resource"}), 400
+
     try:
-        readings = edgex.get_readings(device, resource, limit=1)
-        logging.info(f"Sensor readings: {readings}")
+        readings = edgex.get_readings(farm_name, resource, limit=1)
         if readings and len(readings) > 0:
             return jsonify({"value": readings[0].get("value")})
         return jsonify({"value": None})
@@ -86,10 +86,7 @@ def statistics():
     
     return render_template('home/statistics.html', segment='statistics')
 
-@blueprint.route('shedule', methods=['GET', 'POST'])
-@login_required
-def schedule():
-    return render_template('home/schedule.html', segment='schedule')
+
 
 
 @blueprint.route('/<template>')
@@ -134,12 +131,11 @@ def get_segment(request):
 # API Endpoints for EdgeX interactions - Real data
 
 
-@blueprint.route("/api/statistics/<sensor_type>")
-def get_sensor_data(sensor_type):
+@blueprint.route("/api/<farm_name>/statistics/<sensor_type>")
+def get_sensor_data(farm_name, sensor_type):
     time_range = request.args.get("timeRange", "day")
     selected_date = request.args.get("date", datetime.date.today().isoformat())
 
-    # Mapping sensor_type → EdgeX resource name
     sensor_map = {
         "humidity": "DoAm",
         "temperature": "NhietDo",
@@ -147,7 +143,6 @@ def get_sensor_data(sensor_type):
     }
     resource = sensor_map.get(sensor_type, "NhietDo")
 
-    # Tính toán khoảng thời gian
     dt = datetime.datetime.fromisoformat(selected_date)
     if time_range == "day":
         start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -170,14 +165,14 @@ def get_sensor_data(sensor_type):
     start_ms = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
 
-    readings = edgex.get_readings(device_name="Tu-1", resource_name=resource, start_ms=start_ms, end_ms=end_ms, limit=limit)
+    readings = edgex.get_readings(device_name=farm_name, resource_name=resource, start_ms=start_ms, end_ms=end_ms, limit=limit)
     logging.info(f"Statistics readings for {resource}: {readings}")
 
     data = []
     for r in readings:
         ts = r.get("origin") or r.get("created")
         try:
-            dt = datetime.datetime.fromtimestamp(int(ts)/1000)
+            dt = datetime.datetime.fromtimestamp(int(ts/1_000_000_000))
             if time_range == "day":
                 label = dt.strftime("%H:%M")
             else:
@@ -191,3 +186,87 @@ def get_sensor_data(sensor_type):
 
     data = data[::-1]
     return jsonify(data)
+    
+
+# Lay danh sach tat ca rule (de render tren giao dien) va xoa toan bo rule (it dung)
+@blueprint.route('/api/<farm_name>/rules/all', methods=['GET', 'DELETE'])
+def api_get_or_delete_all_rules(farm_name):
+    if request.method not in ['GET', 'DELETE']:
+        return jsonify({"error": "Method not allowed"}), 405
+    if request.method == 'GET':
+        try:
+            rule_manager = Rule(device_name=farm_name)
+            rules = rule_manager.get_rules()
+            return jsonify({"success": True, "rules": rules})
+        except Exception as e:
+            return jsonify({"error": f"Lỗi khi lấy danh sách rule: {str(e)}"}), 500
+    else:  # DELETE method
+        try:
+            rule_manager = Rule(device_name=farm_name)
+            result = rule_manager.delete_all_rules()
+            if result.get("success"):
+                return jsonify({"success": True, "message": "All rules deleted successfully"})
+            else:
+                return jsonify({"error": f"Lỗi khi xóa tất cả rule: {result.get('error', 'Unknown error')}"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Lỗi khi xóa tất cả rule: {str(e)}"}), 500
+
+
+@blueprint.route('/api/<farm_name>/rule', methods=['POST', 'DELETE'])
+def api_add_or_delete_rule(farm_name):
+    if request.method == 'DELETE':
+        rule_id = request.args.get('id')
+        if not rule_id:
+            return jsonify({"error": "Missing rule ID"}), 400
+        try:
+            rule_manager = Rule(device_name=farm_name)
+            result = rule_manager.delete_rule(int(rule_id))
+            if result.get("success"):
+                return jsonify({"success": True, "message": "Rule deleted successfully"})
+            else:
+                return jsonify({"error": f"Lỗi khi xóa rule: {result.get('error', 'Unknown error')}"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Lỗi khi xóa rule: {str(e)}"}), 500
+    elif request.method == 'POST':
+        try:
+            rule_json = request.get_json()
+            if not rule_json:
+                return jsonify({"error": "Missing rule data"}), 400
+            
+            num_fields = [
+                "temp_min", "temp_max", "hum_min", "hum_max", "light_min", "light_max",
+                "repeat_days", "start_in_minutes", "end_in_minutes", "relay_index", "logic", "id"
+            ]
+            for f in num_fields:
+                if f in rule_json:
+                    try:
+                        rule_json[f] = int(rule_json[f])
+                    except Exception:
+                        rule_json[f] = 0
+            
+            rule_manager = Rule(device_name=farm_name)
+            # Check if rule_manager has any rules defined (assuming Rule has a method or attribute for this)
+            # If not, return a message
+            if hasattr(rule_manager, "rules") and not rule_manager.rules:
+                return jsonify({"error": f"Không có rule nào được định nghĩa cho thiết bị '{farm_name}'."}), 400
+            result = rule_manager.add_rule(rule_json)
+            if result.get("success"):
+                return jsonify({"success": True, "message": "Rule added successfully"})
+            else:
+                return jsonify({"error": f"Lỗi khi thêm rule: {result.get('error', 'Unknown error')}"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Lỗi khi thêm rule: {str(e)}"}), 500
+            if hasattr(rule_manager, "rules") and not rule_manager.rules:
+                return jsonify({"error": "Không có rule nào được định nghĩa cho thiết bị 'Tu-1'."}), 400
+            result = rule_manager.add_rule(rule_json)
+            if result.get("success"):
+                return jsonify({"success": True, "message": "Rule added successfully"})
+            else:
+                # Improved error message
+                return jsonify({"error": f"Lỗi khi thêm rule: {result.get('error', 'Unknown error')}"}), 500
+        except Exception as e:
+            # Improved error message
+            return jsonify({"error": f"Lỗi khi thêm rule: {str(e)}"}), 500
+
+
+
